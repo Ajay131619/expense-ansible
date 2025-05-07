@@ -1,38 +1,78 @@
-- name: " ansible playbook for the sql  "
+- name: mysql configuration
   hosts: mysql
   become: yes
   vars:
-    password: ExpenseApp@1
-    hst: " mysql.ajaru.shop "
-    user: " root "
+    mysql_root_password: ExpenseApp@1
+    login_host: mysql.ajaru.shop
   tasks:
-    - name: "download mysql server"
-      ansible.builtin.command: " dnf install mysql-server -y "
+  - name: ansible to install pymysql
+    ansible.builtin.pip:
+      name:
+      - PyMySQL
+      executable: pip3.9
+  - name: install MySQL Server
+    ansible.builtin.package:
+      name: mysql-server
+      state: present
 
-    - name: "starting and enabling the service"
-      ansible.builtin.command: " systemctl start mysqld "
+  - name: start mysql server
+    ansible.builtin.service:
+      name: mysqld
+      state: started
+      enabled: yes
 
-    - name: "enabling the mysql server"
-      ansible.builtin.command: " systemctl enable mysqld "
+  - name: connect mysql server
+    community.mysql.mysql_info:
+      login_user: root
+      login_password: "{{ mysql_root_password }}"
+      login_host: "{{ login_host }}"
+    ignore_errors: true
+    register: mysql_info
 
-    - name: installing the required packages
-      ansible.builtin.pip:
-        name:
-        - PyMySQL
+  - name: print mysql info
+    ansible.builtin.debug:
+      msg: "{{ mysql_info }}"
+
+  - name: setup MySQL root password
+    ansible.builtin.command: "mysql_secure_installation --set-root-pass {{ mysql_root_password }}"
+    when: mysql_info.failed is true
+
+
+# - name: " ansible playbook for the sql  "
+#   hosts: mysql
+#   become: yes
+#   vars:
+#     password: ExpenseApp@1
+#     hst: " mysql.ajaru.shop "
+#     user: " root "
+#   tasks:
+#     - name: "download mysql server"
+#       ansible.builtin.command: " dnf install mysql-server -y "
+
+#     - name: "starting and enabling the service"
+#       ansible.builtin.command: " systemctl start mysqld "
+
+#     - name: "enabling the mysql server"
+#       ansible.builtin.command: " systemctl enable mysqld "
+
+#     - name: installing the required packages
+#       ansible.builtin.pip:
+#         name:
+#         - PyMySQL
     
-    - name: "login into mysql server "
-      community.mysql.mysql_info:
-        login_user: "{{ user }}"
-        login_password: "{{ password }}"
-        login_host: "{{ hst }}"
-      ignore_errors: true
-      register: mysql
+#     - name: "login into mysql server "
+#       community.mysql.mysql_info:
+#         login_user: "{{ user }}"
+#         login_password: "{{ password }}"
+#         login_host: "{{ hst }}"
+#       ignore_errors: true
+#       register: mysql
     
-    - name: printing the mysql information
-      ansible.builtin.debug:
-        msg : "{{ mysql }}"
+#     - name: printing the mysql information
+#       ansible.builtin.debug:
+#         msg : "{{ mysql }}"
 
-    - name: "setting the password and the user"
-      ansible.builtin.command: " mysql_secure_installation --set-{{ user }}-pass {{ password }}"
-      when: mysql.failed is true
+#     - name: "setting the password and the user"
+#       ansible.builtin.command: " mysql_secure_installation --set-{{ user }}-pass {{ password }}"
+#       when: mysql.failed is true
       
