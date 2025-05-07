@@ -60,7 +60,7 @@
       ansible.builtin.pip:
         name:
         - PyMySQL
-      executable: pip3.9
+        executable: pip3.9
     
     - name: "login into mysql server "
       community.mysql.mysql_info:
